@@ -9,6 +9,9 @@ var xor = require('buffer-xor/inplace')
 var ecurve = require('ecurve')
 var curve = ecurve.getCurveByName('secp256k1')
 
+var bitcoin = require('bitcoinjs-lib')
+var { addressFunctionP2PKH } = require('coinid-address-functions');
+
 var BigInteger = require('bigi')
 
 // constants
@@ -31,22 +34,22 @@ function hash256 (buffer) {
   ).digest()
 }
 
-function getAddress (d, compressed) {
-  var Q = curve.G.multiply(d).getEncoded(compressed)
-  var hash = hash160(Q)
-  var payload = Buffer.allocUnsafe(21)
-  payload.writeUInt8(0x00, 0) // XXX TODO FIXME bitcoin only??? damn you BIP38
-  hash.copy(payload, 1)
+function getAddress (d, compressed, network) {
+  const node = new bitcoin.ECPair(d, null, {
+    compressed,
+    network
+  });
 
-  return bs58check.encode(payload)
+  const address = addressFunctionP2PKH(node);
+  return address;
 }
 
-function encryptRaw (buffer, compressed, passphrase, progressCallback, scryptParams) {
+function encryptRaw (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
   if (buffer.length !== 32) throw new Error('Invalid private key length')
   scryptParams = scryptParams || SCRYPT_PARAMS
 
   var d = BigInteger.fromBuffer(buffer)
-  var address = getAddress(d, compressed)
+  var address = getAddress(d, compressed, network)
   var secret = Buffer.from(passphrase, 'utf8')
   var salt = hash256(address).slice(0, 4)
 
@@ -76,12 +79,12 @@ function encryptRaw (buffer, compressed, passphrase, progressCallback, scryptPar
   return result
 }
 
-function encrypt (buffer, compressed, passphrase, progressCallback, scryptParams) {
-  return bs58check.encode(encryptRaw(buffer, compressed, passphrase, progressCallback, scryptParams))
+function encrypt (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
+  return bs58check.encode(encryptRaw(buffer, compressed, passphrase, network, progressCallback, scryptParams))
 }
 
 // some of the techniques borrowed from: https://github.com/pointbiz/bitaddress.org
-function decryptRaw (buffer, passphrase, progressCallback, scryptParams) {
+function decryptRaw (buffer, passphrase, network, progressCallback, scryptParams) {
   // 39 bytes: 2 bytes prefix, 37 bytes payload
   if (buffer.length !== 39) throw new Error('Invalid BIP38 data length')
   if (buffer.readUInt8(0) !== 0x01) throw new Error('Invalid BIP38 prefix')
@@ -117,7 +120,7 @@ function decryptRaw (buffer, passphrase, progressCallback, scryptParams) {
 
   // verify salt matches address
   var d = BigInteger.fromBuffer(privateKey)
-  var address = getAddress(d, compressed)
+  var address = getAddress(d, compressed, network)
   var checksum = hash256(address).slice(0, 4)
   assert.deepEqual(salt, checksum)
 
@@ -127,8 +130,8 @@ function decryptRaw (buffer, passphrase, progressCallback, scryptParams) {
   }
 }
 
-function decrypt (string, passphrase, progressCallback, scryptParams) {
-  return decryptRaw(bs58check.decode(string), passphrase, progressCallback, scryptParams)
+function decrypt (string, passphrase, network, progressCallback, scryptParams) {
+  return decryptRaw(bs58check.decode(string), passphrase, network, progressCallback, scryptParams)
 }
 
 function decryptECMult (buffer, passphrase, progressCallback, scryptParams) {
