@@ -207,7 +207,7 @@ function decryptECMult (buffer, passphrase, progressCallback, scryptParams) {
   }
 }
 
-function verify (string) {
+function verify (string, address) {
   var decoded = bs58check.decodeUnsafe(string)
   if (!decoded) return false
 
@@ -220,6 +220,18 @@ function verify (string) {
   // encrypted WIF
   if (type === 0x42) {
     if (flag !== 0xc0 && flag !== 0xe0) return false
+
+    // if address is supplied we also verify with that.
+    if(address) {
+      var salt = decoded.slice(3, 7)
+      var checksum = hash256(address).slice(0, 4);
+
+      try {
+        assert.deepEqual(salt, checksum);
+      } catch(err) {
+        return false;
+      }
+    }
 
   // EC mult
   } else if (type === 0x43) {
