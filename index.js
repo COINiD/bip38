@@ -92,7 +92,7 @@ function decryptRaw (buffer, passphrase, network, progressCallback, scryptParams
 
   // check if BIP38 EC multiply
   var type = buffer.readUInt8(1)
-  if (type === 0x43) return decryptECMult(buffer, passphrase, progressCallback, scryptParams)
+  if (type === 0x43) return decryptECMult(buffer, passphrase, network, progressCallback, scryptParams)
   if (type !== 0x42) throw new Error('Invalid BIP38 type')
 
   passphrase = Buffer.from(passphrase, 'utf8')
@@ -134,7 +134,7 @@ function decrypt (string, passphrase, network, progressCallback, scryptParams) {
   return decryptRaw(bs58check.decode(string), passphrase, network, progressCallback, scryptParams)
 }
 
-function decryptECMult (buffer, passphrase, progressCallback, scryptParams) {
+function decryptECMult (buffer, passphrase, network, progressCallback, scryptParams) {
   passphrase = Buffer.from(passphrase, 'utf8')
   buffer = buffer.slice(1) // FIXME: we can avoid this
   scryptParams = scryptParams || SCRYPT_PARAMS
@@ -146,6 +146,7 @@ function decryptECMult (buffer, passphrase, progressCallback, scryptParams) {
   assert.equal((flag & 0x24), flag, 'Invalid private key.')
 
   var addressHash = buffer.slice(2, 6)
+
   var ownerEntropy = buffer.slice(6, 14)
   var ownerSalt
 
@@ -200,6 +201,11 @@ function decryptECMult (buffer, passphrase, progressCallback, scryptParams) {
 
   // d = passFactor * factorB (mod n)
   var d = passInt.multiply(factorB).mod(curve.n)
+
+  // assert checksum
+  var address = getAddress(d, compressed, network)
+  var checksum = hash256(address).slice(0, 4)
+  assert.deepEqual(addressHash, checksum)
 
   return {
     privateKey: d.toBuffer(32),
