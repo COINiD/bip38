@@ -84,7 +84,7 @@ function encrypt (buffer, compressed, passphrase, network, progressCallback, scr
 }
 
 // some of the techniques borrowed from: https://github.com/pointbiz/bitaddress.org
-function decryptRaw (buffer, passphrase, network, progressCallback, scryptParams) {
+async function decryptRaw (buffer, passphrase, network, progressCallback, scryptParams) {
   // 39 bytes: 2 bytes prefix, 37 bytes payload
   if (buffer.length !== 39) throw new Error('Invalid BIP38 data length')
   if (buffer.readUInt8(0) !== 0x01) throw new Error('Invalid BIP38 prefix')
@@ -106,7 +106,7 @@ function decryptRaw (buffer, passphrase, network, progressCallback, scryptParams
   var p = scryptParams.p
 
   var salt = buffer.slice(3, 7)
-  var scryptBuf = scrypt(passphrase, salt, N, r, p, 64, progressCallback)
+  var scryptBuf = await scrypt(passphrase, salt, N, r, p, 64, progressCallback)
   var derivedHalf1 = scryptBuf.slice(0, 32)
   var derivedHalf2 = scryptBuf.slice(32, 64)
 
@@ -134,7 +134,7 @@ function decrypt (string, passphrase, network, progressCallback, scryptParams) {
   return decryptRaw(bs58check.decode(string), passphrase, network, progressCallback, scryptParams)
 }
 
-function decryptECMult (buffer, passphrase, network, progressCallback, scryptParams) {
+async function decryptECMult (buffer, passphrase, network, progressCallback, scryptParams) {
   passphrase = Buffer.from(passphrase, 'utf8')
   buffer = buffer.slice(1) // FIXME: we can avoid this
   scryptParams = scryptParams || SCRYPT_PARAMS
@@ -165,7 +165,7 @@ function decryptECMult (buffer, passphrase, network, progressCallback, scryptPar
   var N = scryptParams.N
   var r = scryptParams.r
   var p = scryptParams.p
-  var preFactor = scrypt(passphrase, ownerSalt, N, r, p, 32, progressCallback)
+  var preFactor = await scrypt(passphrase, ownerSalt, N, r, p, 32, progressCallback)
 
   var passFactor
   if (hasLotSeq) {
@@ -178,7 +178,7 @@ function decryptECMult (buffer, passphrase, network, progressCallback, scryptPar
   var passInt = BigInteger.fromBuffer(passFactor)
   var passPoint = curve.G.multiply(passInt).getEncoded(true)
 
-  var seedBPass = scrypt(passPoint, Buffer.concat([addressHash, ownerEntropy]), 1024, 1, 1, 64)
+  var seedBPass = await scrypt(passPoint, Buffer.concat([addressHash, ownerEntropy]), 1024, 1, 1, 64)
   var derivedHalf1 = seedBPass.slice(0, 32)
   var derivedHalf2 = seedBPass.slice(32, 64)
 
