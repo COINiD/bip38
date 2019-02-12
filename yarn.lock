@@ -3539,14 +3539,9 @@ sax@^1.2.4:
   resolved "https://registry.yarnpkg.com/sax/-/sax-1.2.4.tgz#2816234e2378bddc4e5354fab5caa895df7100d9"
   integrity sha512-NqVDv9TpANUjFm0N8uM5GxL36UgKi9/atZw+x7YFnQ8ckwFGKrl4xX4yWtrey3UJm5nP1kUbnYgLopqWNSRhWw==
 
-scryptsy@^2.0.0:
+"scryptsy-async@https://github.com/COINiD/scryptsy-async":
   version "2.0.0"
-  resolved "https://registry.yarnpkg.com/scryptsy/-/scryptsy-2.0.0.tgz#262c36f0231cfa7654e2363fa394cd2dec66f378"
-  integrity sha1-Jiw28CMc+nZU4jY/o5TNLexm83g=
-
-"scryptsy@https://github.com/COINiD/scryptsy-async":
-  version "2.0.0"
-  resolved "https://github.com/COINiD/scryptsy-async#1c453dbfc381c9d1a059c2dfd41f005260077d23"
+  resolved "https://github.com/COINiD/scryptsy-async#ad47ddcc7da820cd520183f2607ca242b82b84c9"
 
 semver@^5.3.0:
   version "5.6.0"
