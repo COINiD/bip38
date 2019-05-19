@@ -44,7 +44,7 @@ function getAddress (d, compressed, network) {
   return address;
 }
 
-function encryptRaw (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
+async function encryptRaw (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
   if (buffer.length !== 32) throw new Error('Invalid private key length')
   scryptParams = scryptParams || SCRYPT_PARAMS
 
@@ -57,7 +57,7 @@ function encryptRaw (buffer, compressed, passphrase, network, progressCallback, 
   var r = scryptParams.r
   var p = scryptParams.p
 
-  var scryptBuf = scrypt(secret, salt, N, r, p, 64, progressCallback)
+  var scryptBuf = await scrypt(secret, salt, N, r, p, 64, progressCallback)
   var derivedHalf1 = scryptBuf.slice(0, 32)
   var derivedHalf2 = scryptBuf.slice(32, 64)
 
@@ -79,8 +79,8 @@ function encryptRaw (buffer, compressed, passphrase, network, progressCallback, 
   return result
 }
 
-function encrypt (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
-  return bs58check.encode(encryptRaw(buffer, compressed, passphrase, network, progressCallback, scryptParams))
+async function encrypt (buffer, compressed, passphrase, network, progressCallback, scryptParams) {
+  return bs58check.encode(await encryptRaw(buffer, compressed, passphrase, network, progressCallback, scryptParams))
 }
 
 // some of the techniques borrowed from: https://github.com/pointbiz/bitaddress.org
